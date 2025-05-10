@@ -5,9 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart"
 import { Battery, Droplet, Leaf, LightbulbIcon, Recycle, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import axios from "axios"
+
+
+const BASE_URL = "http://localhost:3000/api";
+
 
 // Mock data for charts
-const carbonData = [
+const sustainabilityData = [
   { name: "Jan", value: 1.8 },
   { name: "Feb", value: 1.6 },
   { name: "Mar", value: 1.5 },
@@ -43,6 +49,41 @@ const waterData = [
 // ]
 
 export default function UsagePage() {
+
+
+  const [sustainabilityData, setSustainabilityData] = useState([]);
+  const [dailyUsageData, setDailyUsageData] = useState([]);
+  
+  useEffect(() => {
+    const userId = 1; // Replace with actual dynamic user ID
+    const fetchUsageData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/usage/${userId}`);
+        const { sustainability, daily_usage } = response.data;
+        console.log(response.data);
+        
+  
+        if (sustainability) {
+          setSustainabilityData(sustainability);
+        } else {
+          console.warn("No sustainability data found");
+        }
+  
+        if (daily_usage) {
+          setDailyUsageData(daily_usage);
+        } else {
+          console.warn("No daily usage data found");
+        }
+  
+      } catch (error) {
+        console.error("Error fetching usage data:", error);
+      }
+    };
+  
+    fetchUsageData();
+  }, []);
+  
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -67,7 +108,7 @@ export default function UsagePage() {
               </CardHeader>
               <CardContent className="h-[400px]">
                 <LineChart
-                  data={carbonData}
+                  data={sustainabilityData}
                   index="name"
                   categories={["value"]}
                   colors={["green"]}
@@ -142,7 +183,7 @@ export default function UsagePage() {
               </CardHeader>
               <CardContent className="h-[400px]">
                 <BarChart
-                  data={energyData}
+                  data={dailyUsageData.electric_usage}
                   index="name"
                   categories={["value"]}
                   colors={["yellow"]}
@@ -184,7 +225,7 @@ export default function UsagePage() {
               </CardHeader>
               <CardContent className="h-[400px]">
                 <LineChart
-                  data={waterData}
+                  data={dailyUsageData.water_usage}
                   index="name"
                   categories={["value"]}
                   colors={["blue"]}
@@ -217,47 +258,6 @@ export default function UsagePage() {
               </Card>
             </div>
           </TabsContent>
-
-          {/* <TabsContent value="waste" className="space-y-6">
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Waste Composition</CardTitle>
-                <CardDescription>Breakdown of your waste by type</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                <PieChart
-                  data={wasteData}
-                  index="name"
-                  categories={["value"]}
-                  colors={["green", "blue", "yellow", "purple", "gray"]}
-                  valueFormatter={(value) => `${value}%`}
-                />
-              </CardContent>
-            </Card> 
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Waste Reduction</CardTitle>
-                  <Trash2 className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">20 kg</div>
-                  <p className="text-xs text-muted-foreground">Total waste saved this month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Recycling Rate</CardTitle>
-                  <Recycle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">65%</div>
-                  <p className="text-xs text-muted-foreground">Of your waste is recycled</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent> */}
         </Tabs>
       </div>
     </DashboardLayout>

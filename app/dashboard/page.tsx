@@ -5,7 +5,9 @@ import DashboardLayout from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import axios from "axios"
 import { BarChart, Droplet, Leaf, LightbulbIcon, Recycle, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 // Mock data for the charts
@@ -31,6 +33,84 @@ const waterData = [
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [mode, setMode] = useState('');
+  const [carbonFootprint, setCarbonFootprint] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fromSuggestions, setFromSuggestions] = useState([]);
+  const [toSuggestions, setToSuggestions] = useState([]);
+  const [selectedFrom, setSelectedFrom] = useState(null);
+  const [selectedTo, setSelectedTo] = useState(null);
+
+  const user_id = 1;  // Replace with actual user ID fetching logic
+
+  // OpenRouteService API Key
+  const ORS_API_KEY = '5b3ce3597851110001cf6248d08e06ffbb3e41c992dda690ddcccd2c';
+
+
+  const handleLocationSearch = async (query, setSuggestions) => {
+    try {
+      const res = await axios.get('https://api.openrouteservice.org/geocode/search', {
+        params: {
+          api_key: ORS_API_KEY,
+          text: query,
+          size: 5,  // Limit to 5 suggestions
+        }
+      });
+      setSuggestions(res.data.features);
+    } catch (error) {
+      console.error(error);
+      setError('Error fetching location suggestions');
+    }
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await axios.post('/sustainability/calculate', {
+        user_id,
+        from: selectedFrom?.properties.formatted || from,
+        to: selectedTo?.properties.formatted || to,
+        mode
+      });
+
+      const { distance, carbon_value } = response.data;
+      setCarbonFootprint({ distance, carbon_value });
+    } catch (err) {
+      setError('Error calculating distance or saving data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFromSelect = (location) => {
+    setFrom(location.properties.formatted);
+    setSelectedFrom(location);
+    setFromSuggestions([]);
+  };
+
+  const handleToSelect = (location) => {
+    setTo(location.properties.formatted);
+    setSelectedTo(location);
+    setToSuggestions([]);
+  };
+
+  useEffect(() => {
+    if (from) {
+      handleLocationSearch(from, setFromSuggestions);
+    }
+  }, [from]);
+
+  useEffect(() => {
+    if (to) {
+      handleLocationSearch(to, setToSuggestions);
+    }
+  }, [to]);
 
   return (
     <DashboardLayout>
@@ -193,7 +273,20 @@ export default function DashboardPage() {
                       type="text"
                       placeholder="City or Airport"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={from}
+                      onChange={(e) => setFrom(e.target.value)}
                     />
+                    <ul className="bg-white border rounded-md mt-2 max-h-48 overflow-y-auto">
+                      {fromSuggestions.map((suggestion) => (
+                        <li
+                          key={suggestion.properties.id}
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleFromSelect(suggestion)}
+                        >
+                          {suggestion.properties.formatted}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">To</label>
@@ -201,26 +294,55 @@ export default function DashboardPage() {
                       type="text"
                       placeholder="City or Airport"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
                     />
+                    <ul className="bg-white border rounded-md mt-2 max-h-48 overflow-y-auto">
+                      {toSuggestions.map((suggestion) => (
+                        <li
+                          key={suggestion.properties.id}
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleToSelect(suggestion)}
+                        >
+                          {suggestion.properties.formatted}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Hotel</label>
-                  <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select accommodation type</option>
-                    <option value="hotel">Hotel</option>
-                    <option value="hostel">Hostel</option>
-                    <option value="apartment">Apartment</option>
-                    <option value="eco-lodge">Eco-Lodge</option>
+                  <label className="text-sm font-medium">Travel Mode</label>
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value)}
+                  >
+                    <option value="">Select mode of transport</option>
+                    <option value="car">Car</option>
+                    <option value="flight">Flight</option>
+                    <option value="bus">Bus</option>
                   </select>
                 </div>
+
+                {error && <div className="text-red-500">{error}</div>}
+
                 <div className="pt-4">
                   <div className="rounded-lg border p-4">
                     <div className="text-sm font-medium">Your Carbon Footprint:</div>
-                    <div className="text-3xl font-bold mt-1">0.6 t</div>
+                    <div className="text-3xl font-bold mt-1">
+                      {carbonFootprint ? `${carbonFootprint.carbon_value.toFixed(2)} t` : '0 t'}
+                    </div>
                   </div>
                 </div>
-                <button className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">OFFSET</button>
+
+                <button
+                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading ? 'Calculating...' : 'Offset'}
+                </button>
               </CardContent>
             </Card>
           </TabsContent>
