@@ -34,13 +34,13 @@ const waterData = [
   { name: "Jun", value: 135 },
 ]
 
-const wasteData = [
-  { name: "Plastic", value: 35 },
-  { name: "Paper", value: 25 },
-  { name: "Food", value: 20 },
-  { name: "Glass", value: 15 },
-  { name: "Other", value: 5 },
-]
+// const wasteData = [
+//   { name: "Plastic", value: 35 },
+//   { name: "Paper", value: 25 },
+//   { name: "Food", value: 20 },
+//   { name: "Glass", value: 15 },
+//   { name: "Other", value: 5 },
+// ]
 
 export default function UsagePage() {
   return (
@@ -52,11 +52,11 @@ export default function UsagePage() {
         </div>
 
         <Tabs defaultValue="carbon">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="carbon">Carbon</TabsTrigger>
             <TabsTrigger value="energy">Energy</TabsTrigger>
             <TabsTrigger value="water">Water</TabsTrigger>
-            <TabsTrigger value="waste">Waste</TabsTrigger>
+            {/* <TabsTrigger value="waste">Waste</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="carbon" className="space-y-6">
@@ -218,8 +218,8 @@ export default function UsagePage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="waste" className="space-y-6">
-            <Card>
+          {/* <TabsContent value="waste" className="space-y-6">
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Waste Composition</CardTitle>
                 <CardDescription>Breakdown of your waste by type</CardDescription>
@@ -233,7 +233,7 @@ export default function UsagePage() {
                   valueFormatter={(value) => `${value}%`}
                 />
               </CardContent>
-            </Card>
+            </Card> 
 
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
@@ -257,7 +257,7 @@ export default function UsagePage() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </div>
     </DashboardLayout>

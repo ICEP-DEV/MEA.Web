@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { use, useEffect, useState } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUpRight, BarChart2, Car, LineChartIcon, MapPin, Calendar, Trophy, Clock, User } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import axios from "axios"
 
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 // Mock sustainability data for South African transport
 const sustainabilityData = {
   user: "Lebo Mokoena",
@@ -23,6 +26,9 @@ const sustainabilityData = {
     { month: "Feb", walkedKm: 10, drivenKm: 30, points: 95 },
     { month: "Mar", walkedKm: 17.5, drivenKm: 30.8, points: 130 },
   ],
+
+
+  
   bookings: [
     {
       id: 1,
@@ -90,14 +96,42 @@ const formatDate = (dateString: string): string => {
 
 export default function SustainabilityPage() {
   const [chartType, setChartType] = useState<"line" | "bar">("bar")
+  const [monthlyData, setMonthlyData] = useState<any[]>([])
 
-  // Prepare chart data
-  const monthlyData = sustainabilityData.monthlyHistory.map((item) => ({
-    name: item.month,
-    walking: item.walkedKm,
-    driving: item.drivenKm,
-    points: item.points,
-  }))
+  const fetchSustainabilityData = async (userId) => {
+    try {
+      // Fetch the data from the API endpoint
+      const response = await axios.get(`${BASE_URL}/sustainability?userId=${userId}`);
+      const sustainabilityData = response.data;
+  
+      // Check if the fetched data has monthlyHistory and map it
+      if (sustainabilityData && sustainabilityData.monthlyHistory) {
+        const monthlyData = sustainabilityData.monthlyHistory.map((item) => ({
+          name: item.month,  // The month (string)
+          walking: item.walkedKm,  // The walked distance
+          driving: item.drivenKm,  // The driven distance
+          points: item.points,  // The sustainability points
+        }));
+  
+        return monthlyData;
+      } else {
+        console.error("No monthly history data found");
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching sustainability data:", error);
+      return null;
+    }
+  };
+  
+useEffect(() => { 
+    const userId = 1; // Replace with the actual user ID
+    fetchSustainabilityData(userId).then((data) => {
+      if (data) {
+        setMonthlyData(data);
+      }
+    });
+  }, [userId]);
 
   return (
     <DashboardLayout>
