@@ -6,9 +6,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import axios from "axios"
-import { BarChart, Bike, Car, Droplet, Leaf, LightbulbIcon, Plane, Recycle, Trash2, Bus } from "lucide-react"
+import {
+  BarChart,
+  Bike,
+  Car,
+  Droplet,
+  Leaf,
+  LightbulbIcon,
+  Plane,
+  Recycle,
+  Trash2,
+  Bus,
+  PlusCircle,
+  FileSpreadsheet,
+  Filter,
+  Download,
+} from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
 // Mock data for the charts
 const energyData = [
@@ -29,6 +59,163 @@ const waterData = [
   { day: "F", value: 130 },
   { day: "S", value: 115 },
   { day: "S", value: 110 },
+]
+
+// Mock data for accommodations
+const mockAccommodations = [
+  { id: 1, name: "Green Residence", type: "Dormitory", address: "123 Campus Drive" },
+  { id: 2, name: "Sunset Apartments", type: "Apartment Complex", address: "456 University Blvd" },
+  { id: 3, name: "Lakeside Housing", type: "Townhouses", address: "789 Lake Road" },
+]
+
+// Mock data for rooms
+const mockRooms = [
+  { id: 1, accommodationId: 1, roomNumber: "A101", floor: 1, occupants: 2, type: "Double" },
+  { id: 2, accommodationId: 1, roomNumber: "A102", floor: 1, occupants: 1, type: "Single" },
+  { id: 3, accommodationId: 1, roomNumber: "B201", floor: 2, occupants: 2, type: "Double" },
+  { id: 4, accommodationId: 2, roomNumber: "101", floor: 1, occupants: 3, type: "Family" },
+  { id: 5, accommodationId: 2, roomNumber: "102", floor: 1, occupants: 2, type: "Double" },
+  { id: 6, accommodationId: 3, roomNumber: "T1", floor: 1, occupants: 4, type: "Family" },
+  { id: 7, accommodationId: 3, roomNumber: "T2", floor: 1, occupants: 4, type: "Family" },
+]
+
+// Mock data for users/tenants
+const mockTenants = [
+  { id: 1, name: "John Doe", email: "john@example.com", roomId: 1 },
+  { id: 2, name: "Jane Smith", email: "jane@example.com", roomId: 1 },
+  { id: 3, name: "Bob Johnson", email: "bob@example.com", roomId: 2 },
+  { id: 4, name: "Alice Williams", email: "alice@example.com", roomId: 3 },
+  { id: 5, name: "Charlie Brown", email: "charlie@example.com", roomId: 3 },
+  { id: 6, name: "Diana Prince", email: "diana@example.com", roomId: 4 },
+  { id: 7, name: "Ethan Hunt", email: "ethan@example.com", roomId: 5 },
+]
+
+// Mock data for water usage
+const mockWaterUsage = [
+  {
+    id: 1,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 1,
+    roomNumber: "A101",
+    date: "2023-05-01",
+    amount: 120,
+    unit: "liters",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 2,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 2,
+    roomNumber: "A102",
+    date: "2023-05-01",
+    amount: 95,
+    unit: "liters",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 3,
+    accommodationId: 2,
+    accommodationName: "Sunset Apartments",
+    roomId: 4,
+    roomNumber: "101",
+    date: "2023-05-01",
+    amount: 150,
+    unit: "liters",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 4,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 1,
+    roomNumber: "A101",
+    date: "2023-05-15",
+    amount: 110,
+    unit: "liters",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 5,
+    accommodationId: 3,
+    accommodationName: "Lakeside Housing",
+    roomId: 6,
+    roomNumber: "T1",
+    date: "2023-05-15",
+    amount: 180,
+    unit: "liters",
+    billingMonth: "May 2023",
+    status: "Pending",
+  },
+]
+
+// Mock data for electricity usage
+const mockElectricityUsage = [
+  {
+    id: 1,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 1,
+    roomNumber: "A101",
+    date: "2023-05-01",
+    amount: 8.5,
+    unit: "kWh",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 2,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 2,
+    roomNumber: "A102",
+    date: "2023-05-01",
+    amount: 7.2,
+    unit: "kWh",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 3,
+    accommodationId: 2,
+    accommodationName: "Sunset Apartments",
+    roomId: 4,
+    roomNumber: "101",
+    date: "2023-05-01",
+    amount: 9.1,
+    unit: "kWh",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 4,
+    accommodationId: 1,
+    accommodationName: "Green Residence",
+    roomId: 1,
+    roomNumber: "A101",
+    date: "2023-05-15",
+    amount: 7.8,
+    unit: "kWh",
+    billingMonth: "May 2023",
+    status: "Billed",
+  },
+  {
+    id: 5,
+    accommodationId: 3,
+    accommodationName: "Lakeside Housing",
+    roomId: 6,
+    roomNumber: "T1",
+    date: "2023-05-15",
+    amount: 12.3,
+    unit: "kWh",
+    billingMonth: "May 2023",
+    status: "Pending",
+  },
 ]
 
 const EMISSION_FACTORS = {
@@ -55,11 +242,45 @@ export default function DashboardPage() {
   const [searchingFrom, setSearchingFrom] = useState(false)
   const [searchingTo, setSearchingTo] = useState(false)
 
+  // Admin state
+  const [waterUsage, setWaterUsage] = useState(mockWaterUsage)
+  const [electricityUsage, setElectricityUsage] = useState(mockElectricityUsage)
+  const [accommodations, setAccommodations] = useState(mockAccommodations)
+  const [rooms, setRooms] = useState(mockRooms)
+  const [tenants, setTenants] = useState(mockTenants)
+  const [waterUploadFile, setWaterUploadFile] = useState(null)
+  const [electricityUploadFile, setElectricityUploadFile] = useState(null)
+  const [waterUploadLoading, setWaterUploadLoading] = useState(false)
+  const [electricityUploadLoading, setElectricityUploadLoading] = useState(false)
+  const [selectedAccommodation, setSelectedAccommodation] = useState("")
+  const [filteredRooms, setFilteredRooms] = useState([])
+
+  // New entry state
+  const [newWaterEntry, setNewWaterEntry] = useState({
+    accommodationId: "",
+    roomId: "",
+    date: "",
+    amount: "",
+    billingMonth: "",
+  })
+
+  const [newElectricityEntry, setNewElectricityEntry] = useState({
+    accommodationId: "",
+    roomId: "",
+    date: "",
+    amount: "",
+    billingMonth: "",
+  })
+
   // Create refs for the suggestion containers
   const fromSuggestionsRef = useRef(null)
   const toSuggestionsRef = useRef(null)
   const fromInputRef = useRef(null)
   const toInputRef = useRef(null)
+
+  // Check if user is admin
+  // const isAdmin = user?.role === "admin"
+  const isAdmin = "admin"
 
   const user_id = "1" // Replace with actual user ID fetching logic
 
@@ -215,6 +436,129 @@ export default function DashboardPage() {
     setToSuggestions([]) // Clear suggestions
   }
 
+  // Handle water CSV upload
+  const handleWaterCsvUpload = async (e) => {
+    e.preventDefault()
+    if (!waterUploadFile) return
+
+    setWaterUploadLoading(true)
+    try {
+      // In a real app, you would send the file to your server
+      // For this example, we'll simulate a successful upload
+      setTimeout(() => {
+        alert("Water usage data uploaded successfully!")
+        setWaterUploadFile(null)
+        setWaterUploadLoading(false)
+      }, 1500)
+    } catch (error) {
+      console.error("Error uploading water data:", error)
+      setWaterUploadLoading(false)
+    }
+  }
+
+  // Handle electricity CSV upload
+  const handleElectricityCsvUpload = async (e) => {
+    e.preventDefault()
+    if (!electricityUploadFile) return
+
+    setElectricityUploadLoading(true)
+    try {
+      // In a real app, you would send the file to your server
+      // For this example, we'll simulate a successful upload
+      setTimeout(() => {
+        alert("Electricity usage data uploaded successfully!")
+        setElectricityUploadFile(null)
+        setElectricityUploadLoading(false)
+      }, 1500)
+    } catch (error) {
+      console.error("Error uploading electricity data:", error)
+      setElectricityUploadLoading(false)
+    }
+  }
+
+  // Handle accommodation selection for filtering rooms
+  const handleAccommodationChange = (accommodationId) => {
+    setSelectedAccommodation(accommodationId)
+    if (accommodationId) {
+      const filtered = rooms.filter((room) => room.accommodationId.toString() === accommodationId)
+      setFilteredRooms(filtered)
+    } else {
+      setFilteredRooms([])
+    }
+  }
+
+  // Handle adding new water entry
+  const handleAddWaterEntry = (e) => {
+    e.preventDefault()
+
+    if (
+      !newWaterEntry.accommodationId ||
+      !newWaterEntry.roomId ||
+      !newWaterEntry.date ||
+      !newWaterEntry.amount ||
+      !newWaterEntry.billingMonth
+    ) {
+      alert("Please fill in all fields")
+      return
+    }
+
+    const selectedAccommodation = accommodations.find((a) => a.id.toString() === newWaterEntry.accommodationId)
+    const selectedRoom = rooms.find((r) => r.id.toString() === newWaterEntry.roomId)
+
+    const newEntry = {
+      id: waterUsage.length + 1,
+      accommodationId: Number.parseInt(newWaterEntry.accommodationId),
+      accommodationName: selectedAccommodation.name,
+      roomId: Number.parseInt(newWaterEntry.roomId),
+      roomNumber: selectedRoom.roomNumber,
+      date: newWaterEntry.date,
+      amount: Number.parseFloat(newWaterEntry.amount),
+      unit: "liters",
+      billingMonth: newWaterEntry.billingMonth,
+      status: "Pending",
+    }
+
+    setWaterUsage([...waterUsage, newEntry])
+    setNewWaterEntry({ accommodationId: "", roomId: "", date: "", amount: "", billingMonth: "" })
+    alert("Water usage entry added successfully!")
+  }
+
+  // Handle adding new electricity entry
+  const handleAddElectricityEntry = (e) => {
+    e.preventDefault()
+
+    if (
+      !newElectricityEntry.accommodationId ||
+      !newElectricityEntry.roomId ||
+      !newElectricityEntry.date ||
+      !newElectricityEntry.amount ||
+      !newElectricityEntry.billingMonth
+    ) {
+      alert("Please fill in all fields")
+      return
+    }
+
+    const selectedAccommodation = accommodations.find((a) => a.id.toString() === newElectricityEntry.accommodationId)
+    const selectedRoom = rooms.find((r) => r.id.toString() === newElectricityEntry.roomId)
+
+    const newEntry = {
+      id: electricityUsage.length + 1,
+      accommodationId: Number.parseInt(newElectricityEntry.accommodationId),
+      accommodationName: selectedAccommodation.name,
+      roomId: Number.parseInt(newElectricityEntry.roomId),
+      roomNumber: selectedRoom.roomNumber,
+      date: newElectricityEntry.date,
+      amount: Number.parseFloat(newElectricityEntry.amount),
+      unit: "kWh",
+      billingMonth: newElectricityEntry.billingMonth,
+      status: "Pending",
+    }
+
+    setElectricityUsage([...electricityUsage, newEntry])
+    setNewElectricityEntry({ accommodationId: "", roomId: "", date: "", amount: "", billingMonth: "" })
+    alert("Electricity usage entry added successfully!")
+  }
+
   useEffect(() => {
     if (from) {
       debouncedFromSearch(from)
@@ -266,6 +610,8 @@ export default function DashboardPage() {
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="calculator">Carbon Calculator</TabsTrigger>
             <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+            {isAdmin && <TabsTrigger value="water-management">Water Management</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="electricity-management">Electricity Management</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -301,16 +647,6 @@ export default function DashboardPage() {
                     <Progress value={90} className="h-2" />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Goal: 150 L</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Waste Savings</CardTitle>
-                  <Recycle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">20 kg</div>
-                  <p className="text-xs text-muted-foreground">+15% from last month</p>
                 </CardContent>
               </Card>
             </div>
@@ -619,6 +955,466 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Water Management Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="water-management" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Accommodation Water Usage Management</h2>
+                <div className="flex space-x-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" />
+                        Add Entry
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Water Usage Entry</DialogTitle>
+                        <DialogDescription>Enter the water usage details for a specific room.</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleAddWaterEntry} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="water-accommodation">Accommodation</Label>
+                          <Select
+                            value={newWaterEntry.accommodationId}
+                            onValueChange={(value) => {
+                              setNewWaterEntry({ ...newWaterEntry, accommodationId: value, roomId: "" })
+                              handleAccommodationChange(value)
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an accommodation" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {accommodations.map((accommodation) => (
+                                <SelectItem key={accommodation.id} value={accommodation.id.toString()}>
+                                  {accommodation.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="water-room">Room Number</Label>
+                          <Select
+                            value={newWaterEntry.roomId}
+                            onValueChange={(value) => setNewWaterEntry({ ...newWaterEntry, roomId: value })}
+                            disabled={!newWaterEntry.accommodationId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a room" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filteredRooms.map((room) => (
+                                <SelectItem key={room.id} value={room.id.toString()}>
+                                  {room.roomNumber} ({room.type})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="water-date">Reading Date</Label>
+                          <Input
+                            id="water-date"
+                            type="date"
+                            value={newWaterEntry.date}
+                            onChange={(e) => setNewWaterEntry({ ...newWaterEntry, date: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="water-amount">Amount (liters)</Label>
+                          <Input
+                            id="water-amount"
+                            type="number"
+                            placeholder="e.g. 120"
+                            value={newWaterEntry.amount}
+                            onChange={(e) => setNewWaterEntry({ ...newWaterEntry, amount: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="water-billing-month">Billing Month</Label>
+                          <Select
+                            value={newWaterEntry.billingMonth}
+                            onValueChange={(value) => setNewWaterEntry({ ...newWaterEntry, billingMonth: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select billing month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="May 2023">May 2023</SelectItem>
+                              <SelectItem value="June 2023">June 2023</SelectItem>
+                              <SelectItem value="July 2023">July 2023</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <DialogFooter>
+                          <Button type="submit">Add Entry</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Upload CSV
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Upload Water Usage Data</DialogTitle>
+                        <DialogDescription>
+                          Upload a CSV file with water usage data. The file should have columns for accommodation_id,
+                          room_id, date, amount, and billing_month.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleWaterCsvUpload} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="water-csv">CSV File</Label>
+                          <Input
+                            id="water-csv"
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setWaterUploadFile(e.target.files[0])}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CSV Format Example</Label>
+                          <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                            accommodation_id,room_id,room_number,date,amount,billing_month
+                            <br />
+                            1,1,A101,2023-05-01,120,May 2023
+                            <br />
+                            1,2,A102,2023-05-01,95,May 2023
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit" disabled={waterUploadLoading || !waterUploadFile}>
+                            {waterUploadLoading ? (
+                              <>
+                                <div className="animate-spin mr-2 h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              "Upload"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                  </Button>
+
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Water Usage Data by Room</CardTitle>
+                  <CardDescription>View and manage water usage for all accommodations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableCaption>A list of all water usage entries by room.</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Accommodation</TableHead>
+                        <TableHead>Room Number</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Amount (liters)</TableHead>
+                        <TableHead>Billing Month</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {waterUsage.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>{entry.id}</TableCell>
+                          <TableCell>{entry.accommodationName}</TableCell>
+                          <TableCell className="font-medium">{entry.roomNumber}</TableCell>
+                          <TableCell>{entry.date}</TableCell>
+                          <TableCell>
+                            {entry.amount} {entry.unit}
+                          </TableCell>
+                          <TableCell>{entry.billingMonth}</TableCell>
+                          <TableCell>
+                            <Badge variant={entry.status === "Billed" ? "outline" : "default"}>{entry.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Water Usage by Accommodation</CardTitle>
+                  <CardDescription>Compare water consumption across different accommodations</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={waterData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} name="Liters" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Electricity Management Tab - Admin Only */}
+          {isAdmin && (
+            <TabsContent value="electricity-management" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Accommodation Electricity Usage Management</h2>
+                <div className="flex space-x-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" />
+                        Add Entry
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Electricity Usage Entry</DialogTitle>
+                        <DialogDescription>Enter the electricity usage details for a specific room.</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleAddElectricityEntry} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-accommodation">Accommodation</Label>
+                          <Select
+                            value={newElectricityEntry.accommodationId}
+                            onValueChange={(value) => {
+                              setNewElectricityEntry({ ...newElectricityEntry, accommodationId: value, roomId: "" })
+                              handleAccommodationChange(value)
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an accommodation" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {accommodations.map((accommodation) => (
+                                <SelectItem key={accommodation.id} value={accommodation.id.toString()}>
+                                  {accommodation.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-room">Room Number</Label>
+                          <Select
+                            value={newElectricityEntry.roomId}
+                            onValueChange={(value) => setNewElectricityEntry({ ...newElectricityEntry, roomId: value })}
+                            disabled={!newElectricityEntry.accommodationId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a room" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filteredRooms.map((room) => (
+                                <SelectItem key={room.id} value={room.id.toString()}>
+                                  {room.roomNumber} ({room.type})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-date">Reading Date</Label>
+                          <Input
+                            id="electricity-date"
+                            type="date"
+                            value={newElectricityEntry.date}
+                            onChange={(e) => setNewElectricityEntry({ ...newElectricityEntry, date: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-amount">Amount (kWh)</Label>
+                          <Input
+                            id="electricity-amount"
+                            type="number"
+                            placeholder="e.g. 8.5"
+                            value={newElectricityEntry.amount}
+                            onChange={(e) => setNewElectricityEntry({ ...newElectricityEntry, amount: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-billing-month">Billing Month</Label>
+                          <Select
+                            value={newElectricityEntry.billingMonth}
+                            onValueChange={(value) =>
+                              setNewElectricityEntry({ ...newElectricityEntry, billingMonth: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select billing month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="May 2023">May 2023</SelectItem>
+                              <SelectItem value="June 2023">June 2023</SelectItem>
+                              <SelectItem value="July 2023">July 2023</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <DialogFooter>
+                          <Button type="submit">Add Entry</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Upload CSV
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Upload Electricity Usage Data</DialogTitle>
+                        <DialogDescription>
+                          Upload a CSV file with electricity usage data. The file should have columns for
+                          accommodation_id, room_id, date, amount, and billing_month.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleElectricityCsvUpload} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="electricity-csv">CSV File</Label>
+                          <Input
+                            id="electricity-csv"
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setElectricityUploadFile(e.target.files[0])}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CSV Format Example</Label>
+                          <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                            accommodation_id,room_id,room_number,date,amount,billing_month
+                            <br />
+                            1,1,A101,2023-05-01,8.5,May 2023
+                            <br />
+                            1,2,A102,2023-05-01,7.2,May 2023
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit" disabled={electricityUploadLoading || !electricityUploadFile}>
+                            {electricityUploadLoading ? (
+                              <>
+                                <div className="animate-spin mr-2 h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              "Upload"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                  </Button>
+
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Electricity Usage Data by Room</CardTitle>
+                  <CardDescription>View and manage electricity usage for all accommodations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableCaption>A list of all electricity usage entries by room.</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Accommodation</TableHead>
+                        <TableHead>Room Number</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Amount (kWh)</TableHead>
+                        <TableHead>Billing Month</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {electricityUsage.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>{entry.id}</TableCell>
+                          <TableCell>{entry.accommodationName}</TableCell>
+                          <TableCell className="font-medium">{entry.roomNumber}</TableCell>
+                          <TableCell>{entry.date}</TableCell>
+                          <TableCell>
+                            {entry.amount} {entry.unit}
+                          </TableCell>
+                          <TableCell>{entry.billingMonth}</TableCell>
+                          <TableCell>
+                            <Badge variant={entry.status === "Billed" ? "outline" : "default"}>{entry.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Electricity Usage by Accommodation</CardTitle>
+                  <CardDescription>Compare electricity consumption across different accommodations</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={energyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} name="kWh" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

@@ -19,6 +19,11 @@ export default function Home() {
                   Login
                 </Button>
               </Link>
+              <Link href="/admin/dashboard">
+                <Button variant="ghost" size="sm">
+                  Admin
+                </Button>
+              </Link>
               <Link href="/register">
                 <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
                   Register
