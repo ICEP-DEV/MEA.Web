@@ -9,7 +9,8 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 
 
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
 
 
 // Mock data for charts
@@ -58,7 +59,7 @@ export default function UsagePage() {
     const userId = 1; // Replace with actual dynamic user ID
     const fetchUsageData = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/usage/${userId}`);
+        const response = await axios.get(BASE_URL+`/usage/${userId}`);
         const { sustainability, daily_usage } = response.data;
         console.log(response.data);
         

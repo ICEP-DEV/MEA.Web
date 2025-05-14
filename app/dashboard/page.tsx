@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import axios from "axios"
-import { BarChart, Droplet, Leaf, LightbulbIcon, Recycle, Trash2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BarChart, Bike, Car, Droplet, Leaf, LightbulbIcon, Plane, Recycle, Trash2, Bus } from "lucide-react"
+import { useEffect, useState, useRef } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 // Mock data for the charts
@@ -31,86 +31,227 @@ const waterData = [
   { day: "S", value: 110 },
 ]
 
+const EMISSION_FACTORS = {
+  car: 0.21,
+  flight: 0.15,
+  bus: 0.1,
+  cycling: 0,
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+
 export default function DashboardPage() {
   const { user } = useAuth()
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [mode, setMode] = useState('');
-  const [carbonFootprint, setCarbonFootprint] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [fromSuggestions, setFromSuggestions] = useState([]);
-  const [toSuggestions, setToSuggestions] = useState([]);
-  const [selectedFrom, setSelectedFrom] = useState(null);
-  const [selectedTo, setSelectedTo] = useState(null);
+  const [from, setFrom] = useState("")
+  const [to, setTo] = useState("")
+  const [mode, setMode] = useState("")
+  const [carbonFootprint, setCarbonFootprint] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [fromSuggestions, setFromSuggestions] = useState([])
+  const [toSuggestions, setToSuggestions] = useState([])
+  const [selectedFrom, setSelectedFrom] = useState(null)
+  const [selectedTo, setSelectedTo] = useState(null)
+  const [searchingFrom, setSearchingFrom] = useState(false)
+  const [searchingTo, setSearchingTo] = useState(false)
 
-  const user_id = 1;  // Replace with actual user ID fetching logic
+  // Create refs for the suggestion containers
+  const fromSuggestionsRef = useRef(null)
+  const toSuggestionsRef = useRef(null)
+  const fromInputRef = useRef(null)
+  const toInputRef = useRef(null)
 
-  // OpenRouteService API Key
-  const ORS_API_KEY = '5b3ce3597851110001cf6248d08e06ffbb3e41c992dda690ddcccd2c';
+  const user_id = "1" // Replace with actual user ID fetching logic
 
+  const ORS_API_KEY = "5b3ce3597851110001cf6248d08e06ffbb3e41c992dda690ddcccd2c"
 
-  const handleLocationSearch = async (query, setSuggestions) => {
+  // Handle location search and provide suggestions
+  const handleLocationSearch = async (query, setSuggestions, setSearching) => {
+    if (!query || query.length < 2) {
+      setSuggestions([])
+      return
+    }
+
+    setSearching(true)
     try {
-      const res = await axios.get('https://api.openrouteservice.org/geocode/search', {
+      console.log("Searching for location:", query)
+      const res = await axios.get("https://api.openrouteservice.org/geocode/search", {
         params: {
           api_key: ORS_API_KEY,
           text: query,
-          size: 5,  // Limit to 5 suggestions
-        }
-      });
-      setSuggestions(res.data.features);
-    } catch (error) {
-      console.error(error);
-      setError('Error fetching location suggestions');
-    }
-  };
+          size: 5, // Limit to 5 suggestions
+        },
+      })
 
+      console.log("API Response:", res.data)
+
+      if (res.data && res.data.features && res.data.features.length > 0) {
+        setSuggestions(res.data.features)
+        console.log("Setting suggestions:", res.data.features)
+      } else {
+        console.log("No suggestions found")
+        setSuggestions([])
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error)
+      setError("Error fetching location suggestions")
+      setSuggestions([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // Debounce function to limit API calls
+  const debounce = (func, delay) => {
+    let timeoutId
+    return function (...args) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      timeoutId = setTimeout(() => {
+        func.apply(this, args)
+      }, delay)
+    }
+  }
+
+  // Create debounced search functions
+  const debouncedFromSearch = debounce(
+    (query) => handleLocationSearch(query, setFromSuggestions, setSearchingFrom),
+    500,
+  )
+  const debouncedToSearch = debounce((query) => handleLocationSearch(query, setToSuggestions, setSearchingTo), 500)
+
+  // Handle form submission to calculate carbon footprint
   const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
+    if (!from || !to || !mode) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    setLoading(true)
+    setError("")
 
     try {
-      const response = await axios.post('/sustainability/calculate', {
-        user_id,
-        from: selectedFrom?.properties.formatted || from,
-        to: selectedTo?.properties.formatted || to,
-        mode
-      });
+      const response = await axios.post(
+        BASE_URL + "/sustainability/calculate",
+        {
+          user_id: "1",
+          from: selectedFrom?.properties.formatted || from,
+          to: selectedTo?.properties.formatted || to,
+          mode: mode,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      )
 
-      const { distance, carbon_value } = response.data;
-      setCarbonFootprint({ distance, carbon_value });
+      const { distance, carbon_value, impact, message } = response.data
+      setCarbonFootprint({ distance, carbon_value, impact, message })
     } catch (err) {
-      setError('Error calculating distance or saving data');
+      console.error("Calculation error:", err)
+      setError("Error calculating distance or saving data. Please try again.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleFromSelect = (location) => {
-    setFrom(location.properties.formatted);
-    setSelectedFrom(location);
-    setFromSuggestions([]);
-  };
+  // Get icon based on transport mode
+  const getTransportIcon = (transportMode) => {
+    switch (transportMode) {
+      case "car":
+        return <Car className="h-5 w-5" />
+      case "flight":
+        return <Plane className="h-5 w-5" />
+      case "bus":
+        return <Bus className="h-5 w-5" />
+      case "cycling":
+        return <Bike className="h-5 w-5" />
+      default:
+        return <Car className="h-5 w-5" />
+    }
+  }
 
-  const handleToSelect = (location) => {
-    setTo(location.properties.formatted);
-    setSelectedTo(location);
-    setToSuggestions([]);
-  };
+  // Get color based on impact level
+  const getImpactColor = (impact) => {
+    switch (impact) {
+      case "positive":
+        return "text-green-600"
+      case "neutral":
+        return "text-amber-500"
+      case "negative":
+        return "text-red-500"
+      default:
+        return "text-gray-600"
+    }
+  }
+
+  // Select a 'from' suggestion and update the input
+  const handleFromSelect = (location, e) => {
+    // Stop event propagation to prevent the global click handler from closing the dropdown
+    if (e) {
+      e.stopPropagation()
+    }
+
+    const locationName =
+      location.properties.label || location.properties.formatted || location.properties.name || "Selected location"
+    setFrom(locationName)
+    setSelectedFrom(location)
+    setFromSuggestions([]) // Clear suggestions
+  }
+
+  // Select a 'to' suggestion and update the input
+  const handleToSelect = (location, e) => {
+    // Stop event propagation to prevent the global click handler from closing the dropdown
+    if (e) {
+      e.stopPropagation()
+    }
+
+    const locationName =
+      location.properties.label || location.properties.formatted || location.properties.name || "Selected location"
+    setTo(locationName)
+    setSelectedTo(location)
+    setToSuggestions([]) // Clear suggestions
+  }
 
   useEffect(() => {
     if (from) {
-      handleLocationSearch(from, setFromSuggestions);
+      debouncedFromSearch(from)
     }
-  }, [from]);
+  }, [from])
 
   useEffect(() => {
     if (to) {
-      handleLocationSearch(to, setToSuggestions);
+      debouncedToSearch(to)
     }
-  }, [to]);
+  }, [to])
+
+  // Add a click outside handler to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if the click is outside both suggestion containers and inputs
+      const isFromSuggestionClick = fromSuggestionsRef.current && fromSuggestionsRef.current.contains(event.target)
+      const isToSuggestionClick = toSuggestionsRef.current && toSuggestionsRef.current.contains(event.target)
+      const isFromInputClick = fromInputRef.current && fromInputRef.current.contains(event.target)
+      const isToInputClick = toInputRef.current && toInputRef.current.contains(event.target)
+
+      // Only close suggestions if the click is outside the relevant elements
+      if (!isFromSuggestionClick && !isFromInputClick) {
+        setFromSuggestions([])
+      }
+
+      if (!isToSuggestionClick && !isToInputClick) {
+        setToSuggestions([])
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   return (
     <DashboardLayout>
@@ -267,81 +408,181 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <label className="text-sm font-medium">From</label>
                     <input
+                      ref={fromInputRef}
                       type="text"
                       placeholder="City or Airport"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={from}
                       onChange={(e) => setFrom(e.target.value)}
+                      onClick={(e) => e.stopPropagation()} // Prevent propagation on input click
                     />
-                    <ul className="bg-white border rounded-md mt-2 max-h-48 overflow-y-auto">
-                      {fromSuggestions.map((suggestion) => (
-                        <li
-                          key={suggestion.properties.id}
-                          className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleFromSelect(suggestion)}
-                        >
-                          {suggestion.properties.formatted}
-                        </li>
-                      ))}
-                    </ul>
+                    {searchingFrom && (
+                      <div className="absolute right-3 top-9">
+                        <div className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+                      </div>
+                    )}
+                    {fromSuggestions.length > 0 && (
+                      <ul
+                        ref={fromSuggestionsRef}
+                        className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg"
+                        onClick={(e) => e.stopPropagation()} // Prevent propagation on container click
+                      >
+                        {fromSuggestions.map((suggestion) => (
+                          <li
+                            key={suggestion.properties.id || suggestion.id || Math.random().toString()}
+                            className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                            onClick={(e) => handleFromSelect(suggestion, e)}
+                          >
+                            {suggestion.properties.label ||
+                              suggestion.properties.formatted ||
+                              suggestion.properties.name ||
+                              "Unknown location"}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <label className="text-sm font-medium">To</label>
                     <input
+                      ref={toInputRef}
                       type="text"
                       placeholder="City or Airport"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={to}
                       onChange={(e) => setTo(e.target.value)}
+                      onClick={(e) => e.stopPropagation()} // Prevent propagation on input click
                     />
-                    <ul className="bg-white border rounded-md mt-2 max-h-48 overflow-y-auto">
-                      {toSuggestions.map((suggestion) => (
-                        <li
-                          key={suggestion.properties.id}
-                          className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleToSelect(suggestion)}
-                        >
-                          {suggestion.properties.formatted}
-                        </li>
-                      ))}
-                    </ul>
+                    {searchingTo && (
+                      <div className="absolute right-3 top-9">
+                        <div className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+                      </div>
+                    )}
+                    {toSuggestions.length > 0 && (
+                      <ul
+                        ref={toSuggestionsRef}
+                        className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg"
+                        onClick={(e) => e.stopPropagation()} // Prevent propagation on container click
+                      >
+                        {toSuggestions.map((suggestion) => (
+                          <li
+                            key={suggestion.properties.id || suggestion.id || Math.random().toString()}
+                            className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                            onClick={(e) => handleToSelect(suggestion, e)}
+                          >
+                            {suggestion.properties.label ||
+                              suggestion.properties.formatted ||
+                              suggestion.properties.name ||
+                              "Unknown location"}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Travel Mode</label>
-                  <select
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value)}
-                  >
-                    <option value="">Select mode of transport</option>
-                    <option value="car">Car</option>
-                    <option value="flight">Flight</option>
-                    <option value="bus">Bus</option>
-                  </select>
-                </div>
-
-                {error && <div className="text-red-500">{error}</div>}
-
-                <div className="pt-4">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Your Carbon Footprint:</div>
-                    <div className="text-3xl font-bold mt-1">
-                      {carbonFootprint ? `${carbonFootprint.carbon_value.toFixed(2)} t` : '0 t'}
-                    </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMode("car")}
+                      className={`flex flex-col items-center justify-center p-3 rounded-md border ${
+                        mode === "car" ? "bg-green-50 border-green-500" : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Car className={`h-6 w-6 ${mode === "car" ? "text-green-600" : "text-gray-500"}`} />
+                      <span className="mt-1 text-xs">Car</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode("flight")}
+                      className={`flex flex-col items-center justify-center p-3 rounded-md border ${
+                        mode === "flight" ? "bg-green-50 border-green-500" : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Plane className={`h-6 w-6 ${mode === "flight" ? "text-green-600" : "text-gray-500"}`} />
+                      <span className="mt-1 text-xs">Flight</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode("bus")}
+                      className={`flex flex-col items-center justify-center p-3 rounded-md border ${
+                        mode === "bus" ? "bg-green-50 border-green-500" : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Bus className={`h-6 w-6 ${mode === "bus" ? "text-green-600" : "text-gray-500"}`} />
+                      <span className="mt-1 text-xs">Bus</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode("cycling")}
+                      className={`flex flex-col items-center justify-center p-3 rounded-md border ${
+                        mode === "cycling" ? "bg-green-50 border-green-500" : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Bike className={`h-6 w-6 ${mode === "cycling" ? "text-green-600" : "text-gray-500"}`} />
+                      <span className="mt-1 text-xs">Cycling</span>
+                    </button>
                   </div>
                 </div>
 
+                {error && <div className="text-red-500 text-sm">{error}</div>}
+
+                {carbonFootprint && (
+                  <div className="pt-4">
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">Distance:</div>
+                        <div className="font-semibold">{carbonFootprint.distance.toFixed(2)} km</div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">Carbon Footprint:</div>
+                        <div className="font-semibold">{carbonFootprint.carbon_value.toFixed(2)} t</div>
+                      </div>
+
+                      <div className="pt-2">
+                        <div className="text-sm font-medium mb-1">Environmental Impact:</div>
+                        <div
+                          className={`text-sm p-2 rounded-md ${
+                            carbonFootprint.impact === "positive"
+                              ? "bg-green-50 text-green-700"
+                              : carbonFootprint.impact === "neutral"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-red-50 text-red-700"
+                          }`}
+                        >
+                          {carbonFootprint.message}
+                        </div>
+                      </div>
+
+                      {mode === "cycling" && (
+                        <div className="flex items-center space-x-2 text-green-600 text-sm mt-2">
+                          <Leaf className="h-4 w-4" />
+                          <span>Cycling is the most eco-friendly option!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <button
-                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
+                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 flex items-center justify-center"
                   onClick={handleSubmit}
                   disabled={loading}
                 >
-                  {loading ? 'Calculating...' : 'Offset'}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                      <span>Calculating...</span>
+                    </>
+                  ) : (
+                    "Calculate Impact"
+                  )}
                 </button>
               </CardContent>
             </Card>
