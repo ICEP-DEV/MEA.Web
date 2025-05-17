@@ -103,6 +103,7 @@ export default function SustainabilityPage() {
       // Fetch the data from the API endpoint
       const response = await axios.get(`${BASE_URL}/sustainability?userId=${userId}`);
       const sustainabilityData = response.data;
+  console.log('subsssssssssssss',sustainabilityData);
   
       // Check if the fetched data has monthlyHistory and map it
       if (sustainabilityData && sustainabilityData.monthlyHistory) {
