@@ -225,7 +225,7 @@ const EMISSION_FACTORS = {
   cycling: 0,
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
 
 export default function DashboardPage() {
   const { user } = useAuth()
